@@ -39,7 +39,7 @@ The Alerts and Reports modal has been [redesigned](https://github.com/apache/sup
 
 ### Tags
 
-TODO @rusackas
+While the 3.1 release contained an early ("beta") version of the content tagging system via the `TAGGING_SYSTEM` feature flag, 4.0 takes it to a much more production-ready state, with improved UX/UI, and further testing/hardening. We expect that this feature flag will be enabled and subsequently removed in upcoming major releases. Many Superset deployments are already using and enjoying this new means of organizing thier content in production environments. We look forward to feedback as this feature solidifies. 
 
 ### New CHANGELOG format
 
