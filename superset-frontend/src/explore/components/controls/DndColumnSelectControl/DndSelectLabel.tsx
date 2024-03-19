@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { ReactNode, useMemo } from 'react';
+import React, { ReactNode, useContext, useEffect, useMemo } from 'react';
 import { useDrop } from 'react-dnd';
 import { t, useTheme } from '@superset-ui/core';
 import ControlHeader from 'src/explore/components/ControlHeader';
@@ -31,6 +31,7 @@ import {
 } from 'src/explore/components/DatasourcePanel/types';
 import Icons from 'src/components/Icons';
 import { DndItemType } from '../../DndItemType';
+import { DraggingContext, DropzoneContext } from '../../ExploreContainer';
 
 export type DndSelectLabelProps = {
   name: string;
@@ -71,6 +72,17 @@ export default function DndSelectLabel({
     }),
   });
 
+  const dispatch = useContext(DropzoneContext)[1];
+  console.log('name', props.name);
+  useEffect(() => {
+    dispatch({ key: props.name, canDrop: props.canDrop });
+    return () => {
+      dispatch({ key: props.name });
+    };
+  }, [dispatch, props.name, props.canDrop]);
+
+  const isDragging = useContext(DraggingContext);
+
   const values = useMemo(() => valuesRenderer(), [valuesRenderer]);
 
   function renderGhostButton() {
@@ -94,6 +106,7 @@ export default function DndSelectLabel({
         data-test="dnd-labels-container"
         canDrop={canDrop}
         isOver={isOver}
+        isDragging={isDragging}
       >
         {values}
         {displayGhostButton && renderGhostButton()}
