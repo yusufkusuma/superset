@@ -103,6 +103,10 @@ As part of the 4.0 approved initiatives, the following features were removed fro
 
 - Redirect API: [#26377](https://github.com/apache/superset/pull/26377) removed the deprecated Redirect API that supported short URLs (`/r`) and the `url` metadata table used to store them that was used before the permalink feature. Users lost the ability to generate R links ~1.5 years ago which seems sufficient time to remove the API.
 
+### Additional deprecations
+
+TODO @rusackas - go through the proposals and make sure we didn't miss anything noteworthy here.
+
 ### Business logic improvements
 
 As part of [[SIP-99] Proposal for correctly handling business logic](https://github.com/apache/superset/issues/25048) (specifically [SIP-99A](https://github.com/apache/superset/issues/25107) and [SIP-99B](https://github.com/apache/superset/issues/25108)), this release contains many improvements to the handling of business logic in Superset, specifically related to SQLAlchemy sessions and transactions. The goal of these efforts is to simplify the code, improve code quality, ensure a consistent "unit of work" approach, and provide clear guidance and examples of accepted code standards. These changes aim to improve developer experience by making the code simpler, improving testing, and ensuring a more streamlined and reliable system. We still have a long way to go to fully implement the SIP-99 proposal, but we are making progress and we are excited about the improvements that have been made so far.
@@ -119,10 +123,19 @@ The ECharts version of the Sunburst chart was introduced by [#22833](https://git
 
 ![Sunburst](media/sunburst.png)
 
+### Centralized React Storybook
+
+TODO @rusackas
+
+### Notes on security
+
+TODO @rusackas @dpgaspar to note any CVEs from prior versions that are patched and public as of this release.
+
 ### Some cool stats
 
 - ~15K lines of code were removed by PRs related to 4.0 proposals
 - We reduced the number of NPM packages vulnerabilities by 72%
   - 3.1: 90 vulnerabilities (42 moderate, 34 high, 14 critical)
   - 4.0: 25 vulnerabilities (16 moderate, 8 high, 1 critical)
+- TODO @dpgaspar @rusackas stats on backend dependency CVEs - hopefully none?
 - 40+ dependency changes (upgrades, additions, and removals)
