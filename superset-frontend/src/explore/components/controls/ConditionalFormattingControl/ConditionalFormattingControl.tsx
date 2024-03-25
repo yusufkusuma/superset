@@ -71,6 +71,7 @@ const ConditionalFormattingControl = ({
   columnOptions,
   verboseMap,
   removeIrrelevantConditions,
+  multi = false,
   ...props
 }: ConditionalFormattingControlProps) => {
   const theme = useTheme();
@@ -121,7 +122,10 @@ const ConditionalFormattingControl = ({
     targetValueLeft,
     targetValueRight,
   }: ConditionalFormattingConfig) => {
-    const columnName = (column && verboseMap?.[column]) ?? column;
+    const cols = Array.isArray(column) ? column : [column];
+    const columnName = cols
+      .map(col => (col && verboseMap?.[col]) ?? col)
+      .join(', ');
     switch (operator) {
       case Comparator.None:
         return `${columnName}`;
@@ -154,6 +158,7 @@ const ConditionalFormattingControl = ({
               onChange={(newConfig: ConditionalFormattingConfig) =>
                 onEdit(newConfig, index)
               }
+              multi={multi}
               destroyTooltipOnHide
             >
               <OptionControlContainer withCaret>
@@ -170,6 +175,7 @@ const ConditionalFormattingControl = ({
           columns={columnOptions}
           onChange={onSave}
           destroyTooltipOnHide
+          multi={multi}
         >
           <AddControlLabel>
             <Icons.PlusSmall iconColor={theme.colors.grayscale.light1} />

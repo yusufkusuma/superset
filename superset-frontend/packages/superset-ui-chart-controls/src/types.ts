@@ -446,7 +446,7 @@ export type ConditionalFormattingConfig = {
   targetValue?: number;
   targetValueLeft?: number;
   targetValueRight?: number;
-  column?: string;
+  column?: string | string[];
   colorScheme?: string;
 };
 
@@ -519,7 +519,7 @@ export type ControlFormItemSpec<T extends ControlType = ControlType> = {
   ? {
       allowNewOptions?: boolean;
       options: any;
-      value?: string;
+      value?: string | string[];
       defaultValue?: string;
       creatable?: boolean;
       minWidth?: number | string;

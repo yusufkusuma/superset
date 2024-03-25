@@ -186,10 +186,12 @@ export const FormattingPopoverContent = ({
   config,
   onChange,
   columns = [],
+  multi = false,
 }: {
   config?: ConditionalFormattingConfig;
   onChange: (config: ConditionalFormattingConfig) => void;
   columns: { label: string; value: string }[];
+  multi?: boolean;
 }) => {
   const theme = useTheme();
   const colorScheme = colorSchemeOptions(theme);
@@ -208,7 +210,11 @@ export const FormattingPopoverContent = ({
             rules={rulesRequired}
             initialValue={columns[0]?.value}
           >
-            <Select ariaLabel={t('Select column')} options={columns} />
+            <Select
+              mode={multi ? 'multiple' : undefined}
+              ariaLabel={t('Select column')}
+              options={columns}
+            />
           </FormItem>
         </Col>
         <Col span={12}>

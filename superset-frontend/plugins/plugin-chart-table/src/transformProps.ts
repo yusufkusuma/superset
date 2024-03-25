@@ -483,6 +483,7 @@ const transformProps = (
 
   const basicColorFormatters =
     comparisonColorEnabled && getBasicColorFormatter(baseQuery?.data, columns);
+
   const columnColorFormatters =
     getColorFormatters(conditionalFormatting, passedData) ??
     defaultColorFormatters;

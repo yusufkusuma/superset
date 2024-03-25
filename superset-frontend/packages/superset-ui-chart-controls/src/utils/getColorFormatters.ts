@@ -195,8 +195,13 @@ export const getColorFormatters = memoizeOne(
   ) =>
     columnConfig?.reduce(
       (acc: ColorFormatters, config: ConditionalFormattingConfig) => {
+        const columns = Array.isArray(config?.column)
+          ? config?.column
+          : config?.column
+            ? [config?.column]
+            : undefined;
         if (
-          config?.column !== undefined &&
+          columns !== undefined &&
           (config?.operator === Comparator.None ||
             (config?.operator !== undefined &&
               (MultipleValueComparators.includes(config?.operator)
@@ -204,13 +209,15 @@ export const getColorFormatters = memoizeOne(
                   config?.targetValueRight !== undefined
                 : config?.targetValue !== undefined)))
         ) {
-          acc.push({
-            column: config?.column,
-            getColorFromValue: getColorFunction(
-              config,
-              data.map(row => row[config.column!] as number),
-              alpha,
-            ),
+          columns.forEach((column: string) => {
+            acc.push({
+              column,
+              getColorFromValue: getColorFunction(
+                config,
+                data.map(row => row[column!] as number),
+                alpha,
+              ),
+            });
           });
         }
         return acc;

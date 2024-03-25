@@ -26,7 +26,7 @@ export type ConditionalFormattingConfig = {
   targetValue?: number;
   targetValueLeft?: number;
   targetValueRight?: number;
-  column?: string;
+  column?: string | string[];
   colorScheme?: string;
 };
 
@@ -38,6 +38,7 @@ export type ConditionalFormattingControlProps = ControlComponentProps<
   verboseMap: Record<string, string>;
   label: string;
   description: string;
+  multi?: boolean;
 };
 
 export type FormattingPopoverProps = PopoverProps & {
@@ -46,4 +47,5 @@ export type FormattingPopoverProps = PopoverProps & {
   config?: ConditionalFormattingConfig;
   title: string;
   children: ReactNode;
+  multi?: boolean;
 };
