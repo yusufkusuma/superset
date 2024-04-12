@@ -145,7 +145,11 @@ class PrestoDBSQLValidator(BaseSQLValidator):
 
     @classmethod
     def validate(
-        cls, sql: str, schema: Optional[str], database: Database
+        cls,
+        sql: str,
+        catalog: Optional[str],
+        schema: Optional[str],
+        database: Database,
     ) -> list[SQLValidationAnnotation]:
         """
         Presto supports query-validation queries by running them with a
@@ -161,7 +165,9 @@ class PrestoDBSQLValidator(BaseSQLValidator):
         # todo(hughhh): update this to use new database.get_raw_connection()
         # this function keeps stalling CI
         with database.get_sqla_engine_with_context(
-            schema, source=QuerySource.SQL_LAB
+            catalog=catalog,
+            schema=schema,
+            source=QuerySource.SQL_LAB,
         ) as engine:
             # Sharing a single connection and cursor across the
             # execution of all statements (if many)

@@ -760,18 +760,28 @@ class BaseEngineSpec:  # pylint: disable=too-many-public-methods
     def get_engine(
         cls,
         database: Database,
+        catalog: str | None = None,
         schema: str | None = None,
         source: utils.QuerySource | None = None,
     ) -> ContextManager[Engine]:
         """
         Return an engine context manager.
 
-            >>> with DBEngineSpec.get_engine(database, schema, source) as engine:
+            >>> with DBEngineSpec.get_engine(
+            ...     database,
+            ...     catalog,
+            ...     schema,
+            ...     source
+            ... ) as engine:
             ...     connection = engine.connect()
             ...     connection.execute(sql)
 
         """
-        return database.get_sqla_engine_with_context(schema=schema, source=source)
+        return database.get_sqla_engine_with_context(
+            catalog=catalog,
+            schema=schema,
+            source=source,
+        )
 
     @classmethod
     def get_timestamp_expr(
@@ -1224,7 +1234,11 @@ class BaseEngineSpec:  # pylint: disable=too-many-public-methods
             # Only add schema when it is preset and non-empty.
             to_sql_kwargs["schema"] = table.schema
 
-        with cls.get_engine(database) as engine:
+        with cls.get_engine(
+            database=database,
+            catalog=table.catalog,
+            schema=table.schema,
+        ) as engine:
             if engine.dialect.supports_multivalues_insert:
                 to_sql_kwargs["method"] = "multi"
 
@@ -1632,12 +1646,22 @@ class BaseEngineSpec:  # pylint: disable=too-many-public-methods
         return sql
 
     @classmethod
-    def estimate_statement_cost(cls, statement: str, cursor: Any) -> dict[str, Any]:
+    def estimate_statement_cost(
+        cls,
+        statement: str,
+        database: Database,
+        catalog: str | None = None,
+        schema: str | None = None,
+        source: utils.QuerySource | None = None,
+    ) -> dict[str, Any]:
         """
         Generate a SQL query that estimates the cost of a given statement.
 
         :param statement: A single SQL statement
-        :param cursor: Cursor instance
+        :param database: A database instance
+        :param catalog: The database catalog
+        :param schema: The database schema
+        :param source: Source of the query (eg, "sql_lab")
         :return: Dictionary with different costs
         """
         raise Exception(  # pylint: disable=broad-exception-raised
@@ -1684,6 +1708,7 @@ class BaseEngineSpec:  # pylint: disable=too-many-public-methods
     def estimate_query_cost(
         cls,
         database: Database,
+        catalog: str | None,
         schema: str,
         sql: str,
         source: utils.QuerySource | None = None,
@@ -1692,9 +1717,11 @@ class BaseEngineSpec:  # pylint: disable=too-many-public-methods
         Estimate the cost of a multiple statement SQL query.
 
         :param database: Database instance
+        :param catalog: Database catalog
         :param schema: Database schema
         :param sql: SQL query with possibly multiple statements
         :param source: Source of the query (eg, "sql_lab")
+        :return: List of dictionaries with different costs
         """
         extra = database.get_extra() or {}
         if not cls.get_allow_cost_estimate(extra):
@@ -1706,11 +1733,17 @@ class BaseEngineSpec:  # pylint: disable=too-many-public-methods
         statements = parsed_query.get_statements()
 
         costs = []
-        with database.get_raw_connection(schema=schema, source=source) as conn:
-            cursor = conn.cursor()
-            for statement in statements:
-                processed_statement = cls.process_statement(statement, database)
-                costs.append(cls.estimate_statement_cost(processed_statement, cursor))
+        for statement in statements:
+            processed_statement = cls.process_statement(statement, database)
+            costs.append(
+                cls.estimate_statement_cost(
+                    processed_statement,
+                    database,
+                    catalog,
+                    schema,
+                    source,
+                )
+            )
 
         return costs
 
@@ -2131,7 +2164,7 @@ class BaseEngineSpec:  # pylint: disable=too-many-public-methods
     @classmethod
     def get_public_information(cls) -> dict[str, Any]:
         """
-        Construct a Dict with properties we want to expose.
+        Construct database properties we want to expose to the frontend.
 
         :returns: Dict with properties of our class like supports_file_upload
         and disable_ssh_tunneling
@@ -2139,6 +2172,7 @@ class BaseEngineSpec:  # pylint: disable=too-many-public-methods
         return {
             "supports_file_upload": cls.supports_file_upload,
             "disable_ssh_tunneling": cls.disable_ssh_tunneling,
+            "supports_dynamic_catalog": cls.supports_dynamic_catalog,
         }
 
     @classmethod

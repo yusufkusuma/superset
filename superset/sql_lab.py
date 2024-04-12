@@ -470,7 +470,11 @@ def execute_sql_statements(
             )
         )
 
-    with database.get_raw_connection(query.schema, source=QuerySource.SQL_LAB) as conn:
+    with database.get_raw_connection(
+        catalog=query.catalog,
+        schema=query.schema,
+        source=QuerySource.SQL_LAB,
+    ) as conn:
         # Sharing a single connection and cursor across the
         # execution of all statements (if many)
         cursor = conn.cursor()
@@ -645,7 +649,9 @@ def cancel_query(query: Query) -> bool:
         return False
 
     with query.database.get_sqla_engine_with_context(
-        query.schema, source=QuerySource.SQL_LAB
+        catalog=query.catalog,
+        schema=query.schema,
+        source=QuerySource.SQL_LAB,
     ) as engine:
         with closing(engine.raw_connection()) as conn:
             with closing(conn.cursor()) as cursor:

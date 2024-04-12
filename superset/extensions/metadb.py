@@ -272,9 +272,6 @@ class SupersetShillelaghAdapter(Adapter):
         self.schema = parts.pop(-1) if parts else None
         self.catalog = parts.pop(-1) if parts else None
 
-        if self.catalog:
-            raise NotImplementedError("Catalogs are not currently supported")
-
         # If the table has a single integer primary key we use that as the row ID in order
         # to perform updates and deletes. Otherwise we can only do inserts and selects.
         self._rowid: str | None = None
@@ -316,7 +313,8 @@ class SupersetShillelaghAdapter(Adapter):
         # store this callable for later whenever we need an engine
         self.engine_context = partial(
             database.get_sqla_engine_with_context,
-            self.schema,
+            catalog=self.catalog,
+            schema=self.schema,
         )
 
         # fetch column names and types

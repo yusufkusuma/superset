@@ -215,13 +215,6 @@ class Dashboard(AuditMixinNullable, ImportExportMixin, Model):
         return [slc.chart for slc in self.slices]
 
     @property
-    def sqla_metadata(self) -> None:
-        # pylint: disable=no-member
-        with self.get_sqla_engine_with_context() as engine:
-            meta = MetaData(bind=engine)
-            meta.reflect()
-
-    @property
     def status(self) -> utils.DashboardStatus:
         if self.published:
             return utils.DashboardStatus.PUBLISHED

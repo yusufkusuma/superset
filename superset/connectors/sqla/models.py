@@ -1146,6 +1146,7 @@ class SqlaTable(
         foreign_keys=[database_id],
     )
     schema = Column(String(255))
+    catalog = Column(String(256), nullable=True, default=None)
     sql = Column(MediumText())
     is_sqllab_view = Column(Boolean, default=False)
     template_params = Column(Text)

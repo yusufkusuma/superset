@@ -107,6 +107,7 @@ class Query(
     status = Column(String(16), default=QueryStatus.PENDING)
     tab_name = Column(String(256))
     sql_editor_id = Column(String(256))
+    catalog = Column(String(256), nullable=True, default=None)
     schema = Column(String(256))
     sql = Column(MediumText())
     # Query to retrieve the results,
@@ -384,6 +385,7 @@ class SavedQuery(
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("ab_user.id"), nullable=True)
     db_id = Column(Integer, ForeignKey("dbs.id"), nullable=True)
+    catalog = Column(String(256), nullable=True, default=None)
     schema = Column(String(128))
     label = Column(String(256))
     description = Column(Text)
@@ -472,6 +474,7 @@ class TabState(AuditMixinNullable, ExtraJSONMixin, Model):
     # selected DB and schema
     database_id = Column(Integer, ForeignKey("dbs.id", ondelete="CASCADE"))
     database = relationship("Database", foreign_keys=[database_id])
+    catalog = Column(String(256), nullable=True, default=None)
     schema = Column(String(256))
 
     # tables that are open in the schema browser and their data previews
@@ -533,6 +536,7 @@ class TableSchema(AuditMixinNullable, ExtraJSONMixin, Model):
         Integer, ForeignKey("dbs.id", ondelete="CASCADE"), nullable=False
     )
     database = relationship("Database", foreign_keys=[database_id])
+    catalog = Column(String(256), nullable=True, default=None)
     schema = Column(String(256))
     table = Column(String(256))
 

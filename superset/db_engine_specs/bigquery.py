@@ -378,7 +378,11 @@ class BigQueryEngineSpec(BaseEngineSpec):  # pylint: disable=too-many-public-met
             raise SupersetException("The table schema must be defined")
 
         to_gbq_kwargs = {}
-        with cls.get_engine(database) as engine:
+        with cls.get_engine(
+            database=database,
+            catalog=table.catalog,
+            schema=table.schema,
+        ) as engine:
             to_gbq_kwargs = {
                 "destination_table": str(table),
                 "project_id": engine.url.host,
@@ -419,6 +423,7 @@ class BigQueryEngineSpec(BaseEngineSpec):  # pylint: disable=too-many-public-met
     def estimate_query_cost(
         cls,
         database: "Database",
+        catalog: Optional[str],
         schema: str,
         sql: str,
         source: Optional[utils.QuerySource] = None,
@@ -427,6 +432,7 @@ class BigQueryEngineSpec(BaseEngineSpec):  # pylint: disable=too-many-public-met
         Estimate the cost of a multiple statement SQL query.
 
         :param database: Database instance
+        :param catalog: Database project
         :param schema: Database schema
         :param sql: SQL query with possibly multiple statements
         :param source: Source of the query (eg, "sql_lab")
@@ -467,8 +473,12 @@ class BigQueryEngineSpec(BaseEngineSpec):  # pylint: disable=too-many-public-met
         return True
 
     @classmethod
-    def estimate_statement_cost(cls, statement: str, cursor: Any) -> dict[str, Any]:
-        with cls.get_engine(cursor) as engine:
+    def estimate_statement_cost(
+        cls,
+        statement: str,
+        database: "Database",
+    ) -> dict[str, Any]:
+        with cls.get_engine(database) as engine:
             client = cls._get_client(engine)
             job_config = bigquery.QueryJobConfig(dry_run=True)
             query_job = client.query(

@@ -217,7 +217,10 @@ def load_data(data_uri: str, dataset: SqlaTable, database: Database) -> None:
         )
     else:
         logger.warning("Loading data outside the import transaction")
-        with database.get_sqla_engine_with_context() as engine:
+        with database.get_sqla_engine_with_context(
+            catalog=dataset.catalog,
+            schema=dataset.schema,
+        ) as engine:
             df.to_sql(
                 dataset.table_name,
                 con=engine,

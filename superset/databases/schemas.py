@@ -650,6 +650,12 @@ class SelectStarResponseSchema(Schema):
     result = fields.String(metadata={"description": "SQL select star"})
 
 
+class CatalogsResponseSchema(Schema):
+    result = fields.List(
+        fields.String(metadata={"description": "A database catalog name"})
+    )
+
+
 class SchemasResponseSchema(Schema):
     result = fields.List(
         fields.String(metadata={"description": "A database schema name"})
@@ -897,6 +903,20 @@ class DatabaseSchemaAccessForFileUploadResponse(Schema):
     )
 
 
+class EngineInformationSchema(Schema):
+    supports_file_upload = fields.Boolean(
+        metadata={"description": "Users can upload files to the database"}
+    )
+    disable_ssh_tunneling = fields.Boolean(
+        metadata={"description": "SSH tunnel is not available to the database"}
+    )
+    supports_dynamic_catalog = fields.Boolean(
+        metadata={
+            "description": "The database supports multiple catalogs in a single connection"
+        }
+    )
+
+
 class DatabaseConnectionSchema(Schema):
     """
     Schema with database connection information.
@@ -930,7 +950,7 @@ class DatabaseConnectionSchema(Schema):
     driver = fields.String(
         allow_none=True, metadata={"description": "SQLAlchemy driver to use"}
     )
-    engine_information = fields.Dict(keys=fields.String(), values=fields.Raw())
+    engine_information = fields.Nested(EngineInformationSchema)
     expose_in_sqllab = fields.Boolean(
         metadata={"description": expose_in_sqllab_description}
     )
