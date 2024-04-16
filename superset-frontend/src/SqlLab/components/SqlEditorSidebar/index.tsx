@@ -161,6 +161,7 @@ const SqlEditorSidebar: React.FC<Props> = ({
               >
                 <Suspense fallback={<Skeleton active />}>
                   <App
+                    width={width}
                     queryEditorId={queryEditorId}
                     useQueryHistoryQuery={useEditorQueriesQuery}
                     useQueryEditor={useQueryEditor}

@@ -24,6 +24,7 @@ import { RegistryMetadata } from 'src/utils/functionalRegistry';
 import { queriesSelector } from 'src/SqlLab/selectors/queryEditor';
 
 export type AddonProps = {
+  width: number;
   queryEditorId: string;
   active: boolean;
   useQueryEditor: typeof useQueryEditor;
