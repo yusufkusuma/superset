@@ -20,8 +20,8 @@
 // TODO: POC only component can be removed after PR approved
 export default {
   metadata: {
-    name: 'Example GPT',
-    description: 'Example description',
+    name: 'Mineva Metadata',
+    description: 'Show available minerva dimentions and metrics',
     iconName: 'filter',
   },
   loadComponent: () => import('./ExampleAddon'),

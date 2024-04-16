@@ -17,31 +17,39 @@
  * under the License.
  */
 import React from 'react';
-import { t } from '@superset-ui/core';
 import { AddonProps } from 'src/SqlLab/addons/types';
-import { Input, List } from 'antd';
-import Icons from 'src/components/Icons';
+import { api, JsonResponse } from 'src/hooks/apiResources/queryApi';
+import DataSourcePanel from 'src/explore/components/DatasourcePanel';
+
+const exploreApi = api.injectEndpoints({
+  endpoints: builder => ({
+    explore: builder.query<Record<string, any>, void>({
+      query: () => ({
+        endpoint: '/api/v1/explore/?slice_id=24771',
+        transformResponse: ({ json }: JsonResponse) => json.result,
+      }),
+    }),
+  }),
+});
+
+const { useExploreQuery } = exploreApi;
 
 // TODO: POC only component can be removed after PR approved
-const ExampleAddon: React.FC<AddonProps> = ({ queryEditorId }) => (
-  <>
-    <List
-      dataSource={[1, 2, 3]}
-      renderItem={() => (
-        <List.Item>
-          <List.Item.Meta
-            description={t('Example Description')}
-            avatar={<Icons.GithubOutlined />}
-          />
-        </List.Item>
+const ExampleAddon: React.FC<AddonProps> = ({ width }) => {
+  const { data } = useExploreQuery();
+  return (
+    <>
+      {data && (
+        <DataSourcePanel
+          formData={data.form_data}
+          datasource={data.dataset}
+          controls={{ datasource: {} }}
+          actions={{ setControlValue: () => {} }}
+          width={width - 80}
+        />
       )}
-    />
-    <Input
-      size="large"
-      placeholder="large size"
-      prefix={<Icons.UserOutlined />}
-    />
-  </>
-);
+    </>
+  );
+};
 
 export default ExampleAddon;
