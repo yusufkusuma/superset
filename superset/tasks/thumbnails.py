@@ -52,12 +52,12 @@ def cache_chart_thumbnail(
         logger.warning("No chart found, skip computing chart thumbnail")
         return None
     url = get_url_path("Superset.slice", slice_id=chart.id)
-    logger.info("Caching chart: %s", url)
     _, username = get_executor(
         executor_types=current_app.config["THUMBNAIL_EXECUTE_AS"],
         model=chart,
         current_user=current_user,
     )
+    logger.info("Caching chart: %s as %s", url, username)
     user = security_manager.find_user(username)
     with override_user(user):
         screenshot = ChartScreenshot(url, chart.digest)
