@@ -19,7 +19,7 @@ import contextlib
 import re
 import threading
 from re import Pattern
-from typing import Any, Callable, List, NamedTuple, Optional
+from typing import Any, Callable, NamedTuple, Optional
 
 from flask_babel import gettext as __
 from sqlalchemy.engine.reflection import Inspector
@@ -204,7 +204,7 @@ try:
         TypeCodes.ST_LINESTRING: _linestring_to_geo_json,
         TypeCodes.ST_POLYGON: _polygon_to_geo_json,
     }
-except ImportError as e:
+except ImportError:
     _sanitized_ocient_type_codes = {}
 
 

@@ -27,9 +27,8 @@ from typing import Any, Optional
 
 import click
 import jinja2
-from flask.cli import FlaskGroup, with_appcontext
 
-from superset import app, db
+from superset import db
 
 GROUPINGS: dict[str, Iterable[str]] = {
     "Core": [

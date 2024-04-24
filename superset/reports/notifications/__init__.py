@@ -16,8 +16,6 @@
 # under the License.
 from superset.reports.models import ReportRecipients
 from superset.reports.notifications.base import BaseNotification, NotificationContent
-from superset.reports.notifications.email import EmailNotification
-from superset.reports.notifications.slack import SlackNotification
 
 
 def create_notification(

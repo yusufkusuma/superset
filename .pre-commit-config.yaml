@@ -95,3 +95,14 @@ repos:
     hooks:
       - id: helm-docs
         files: helm
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.1.4
+    hooks:
+      # Run the linter.
+      - id: ruff
+        args: [ --fix ]
+        exclude: ^(superset/migrations/|tests/)|superset/config\.py$
+      # Run the formatter.
+      - id: ruff-format
+        exclude: ^(superset/migrations/|tests/)|superset/config\.py$

@@ -18,7 +18,6 @@ import logging
 from typing import Any, Optional
 
 from flask_appbuilder.models.sqla import Model
-from flask_babel import gettext as _
 from marshmallow import ValidationError
 
 from superset import is_feature_enabled

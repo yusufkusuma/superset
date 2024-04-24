@@ -18,7 +18,6 @@
 from typing import Any
 
 from marshmallow import Schema
-from sqlalchemy.orm import Session
 
 from superset.charts.schemas import ImportV1ChartSchema
 from superset.commands.chart.exceptions import ChartImportError

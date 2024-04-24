@@ -18,7 +18,6 @@
 from typing import Any
 
 from marshmallow import Schema
-from sqlalchemy.orm import Session
 from sqlalchemy.sql import select
 
 from superset import db

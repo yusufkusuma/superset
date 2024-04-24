@@ -1289,10 +1289,10 @@ class SqlaTable(
 
     @property
     def dttm_cols(self) -> list[str]:
-        l = [c.column_name for c in self.columns if c.is_dttm]
-        if self.main_dttm_col and self.main_dttm_col not in l:
-            l.append(self.main_dttm_col)
-        return l
+        columns_with_dttm = [c.column_name for c in self.columns if c.is_dttm]
+        if self.main_dttm_col and self.main_dttm_col not in columns_with_dttm:
+            columns_with_dttm.append(self.main_dttm_col)
+        return columns_with_dttm
 
     @property
     def num_cols(self) -> list[str]:

@@ -447,10 +447,10 @@ class PrestoBaseEngineSpec(BaseEngineSpec, metaclass=ABCMeta):
         limit_clause = f"LIMIT {limit}" if limit else ""
         order_by_clause = ""
         if order_by:
-            l = []
+            order_clauses = []
             for field, desc in order_by:
-                l.append(field + " DESC" if desc else "")
-            order_by_clause = "ORDER BY " + ", ".join(l)
+                order_clauses.append(field + " DESC" if desc else "")
+            order_by_clause = "ORDER BY " + ", ".join(order_clauses)
 
         where_clause = ""
         if filters:
