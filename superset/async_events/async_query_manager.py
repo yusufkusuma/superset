@@ -14,7 +14,6 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-import json
 import logging
 import uuid
 from typing import Any, Literal, Optional
@@ -24,6 +23,7 @@ import redis
 from flask import Flask, request, Request, Response, session
 
 from superset.utils.core import get_user_id
+from superset.utils.json import json_dumps
 
 logger = logging.getLogger(__name__)
 
@@ -245,7 +245,7 @@ class AsyncQueryManager:
             raise AsyncQueryJobException("No job ID specified")
 
         updates = {"status": status, **kwargs}
-        event_data = {"data": json.dumps({**job_metadata, **updates})}
+        event_data = {"data": json_dumps({**job_metadata, **updates})}
 
         full_stream_name = f"{self._stream_prefix}full"
         scoped_stream_name = f"{self._stream_prefix}{job_metadata['channel_id']}"

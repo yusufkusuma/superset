@@ -32,6 +32,7 @@ from superset.constants import MODEL_VIEW_RW_METHOD_PERMISSION_MAP, RouteMethod
 from superset.models.dashboard import Dashboard as DashboardModel
 from superset.superset_typing import FlaskResponse
 from superset.utils import core as utils
+from superset.utils import json as json_utils
 from superset.views.base import (
     BaseSupersetView,
     common_bootstrap_payload,
@@ -94,8 +95,8 @@ class DashboardModelView(DashboardMixin, SupersetModelView, DeleteMixin):  # pyl
             item.slug = re.sub(r"[^\w\-]+", "", item.slug)
         if g.user not in item.owners:
             item.owners.append(g.user)
-        utils.validate_json(item.json_metadata)
-        utils.validate_json(item.position_json)
+        json_utils.validate_json(item.json_metadata)
+        json_utils.validate_json(item.position_json)
         for slc in item.slices:
             slc.owners = list(set(item.owners) | set(slc.owners))
 

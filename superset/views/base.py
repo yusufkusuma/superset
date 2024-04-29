@@ -80,6 +80,7 @@ from superset.reports.models import ReportRecipientType
 from superset.superset_typing import FlaskResponse
 from superset.translations.utils import get_language_pack
 from superset.utils import core as utils
+from superset.utils import json as json_utils
 from superset.utils.filters import get_dataset_access_filters
 
 from .utils import bootstrap_user_data
@@ -149,7 +150,7 @@ def json_error_response(
     payload = payload or {"error": f"{msg}"}
 
     return Response(
-        json.dumps(payload, default=utils.json_iso_dttm_ser, ignore_nan=True),
+        json.dumps(payload, default=json_utils.json_iso_dttm_ser, ignore_nan=True),
         status=status,
         mimetype="application/json",
     )
@@ -164,7 +165,7 @@ def json_errors_response(
 
     payload["errors"] = [dataclasses.asdict(error) for error in errors]
     return Response(
-        json.dumps(payload, default=utils.json_iso_dttm_ser, ignore_nan=True),
+        json.dumps(payload, default=json_utils.json_iso_dttm_ser, ignore_nan=True),
         status=status,
         mimetype="application/json; charset=utf-8",
     )
@@ -286,7 +287,7 @@ class BaseSupersetView(BaseView):
     @staticmethod
     def json_response(obj: Any, status: int = 200) -> FlaskResponse:
         return Response(
-            json.dumps(obj, default=utils.json_int_dttm_ser, ignore_nan=True),
+            json.dumps(obj, default=json_utils.json_int_dttm_ser, ignore_nan=True),
             status=status,
             mimetype="application/json",
         )
@@ -303,7 +304,7 @@ class BaseSupersetView(BaseView):
             "superset/spa.html",
             entry="spa",
             bootstrap_data=json.dumps(
-                payload, default=utils.pessimistic_json_iso_dttm_ser
+                payload, default=json_utils.pessimistic_json_iso_dttm_ser
             ),
         )
 

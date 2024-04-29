@@ -51,8 +51,8 @@ from superset.utils.core import (
     create_zip,
     DatasourceType,
     get_user_id,
-    json_int_dttm_ser,
 )
+from superset.utils.json import json_int_dttm_ser
 from superset.utils.decorators import logs_context
 from superset.views.base import CsvResponse, generate_download_headers, XlsxResponse
 from superset.views.base_api import statsd_metrics
