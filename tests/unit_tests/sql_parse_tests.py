@@ -1881,6 +1881,9 @@ WITH t AS (
 )
 SELECT * FROM t"""
     ).is_select()
+    assert not ParsedQuery("").is_select()
+    assert not ParsedQuery("USE foo").is_select()
+    assert ParsedQuery("USE foo; SELECT * FROM bar").is_select()
 
 
 @pytest.mark.parametrize(
