@@ -44,7 +44,7 @@ jobs:
           python-version: "3.10"
 
       - name: Install pip-compile-multi
-        run: pip install pip-compile-multi
+        run: pip install pip-compile-multi pipdeptree
 
       - name: supersetbot bump-python -p "${{ github.event.inputs.package }}"
         env:
