@@ -14,6 +14,10 @@ on:
         required: true
         description: Max number of PRs to open (0 for no limit)
         default: 5
+      extra-flags:
+        required: false
+        description: Pass other command line flags to append to the command
+        default: ''
 
 jobs:
   bump-python-package:
@@ -62,7 +66,7 @@ jobs:
           supersetbot bump-python \
             --verbose \
             --use-current-repo \
-            --include-subpackages \
             --limit ${{ github.event.inputs.limit }} \
+            ${{ github.event.inputs.extra-flags }} \
             $PACKAGE_OPT \
             $GROUP_OPT
