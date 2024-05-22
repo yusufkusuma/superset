@@ -56,6 +56,8 @@ import updateComponentParentsList from '../util/updateComponentParentsList';
 import { FilterBarOrientation } from '../types';
 
 export const HYDRATE_DASHBOARD = 'HYDRATE_DASHBOARD';
+export const HYDRATE_LAYOUT = 'HYDRATE_LAYOUT';
+
 
 export const hydrateDashboard =
   ({ history, dashboard, charts, dataMask, activeTabs }) =>
@@ -326,6 +328,65 @@ export const hydrateDashboard =
           datasetsStatus: ResourceStatus.Loading,
         },
         dashboardLayout,
+      },
+    });
+  };
+
+export const hydrateLayout =
+  positionData =>
+  (dispatch) => {
+    const layout =
+      positionData && Object.keys(positionData).length > 0
+        ? positionData
+        : getEmptyLayout();
+
+    const charts = {};
+    const slices = {};
+    
+    Object.values(layout).forEach(layoutComponent => {
+      if (layoutComponent.type === CHART_TYPE) {
+        charts[layoutComponent.meta.chartId] = {
+          id: layoutComponent.meta.chartId,
+          form_data: {},
+          latestQueryFormData: {},
+          chartStatus: 'loading',
+          chartAlert: null,
+          queriesResponse: null,
+          queryController: null,
+          sliceFormData: null,
+          lastRendered: 0,
+          triggerQuery: false,
+          chartUpdateStartTime: 0,
+          chartUpdateEndTime: null,
+          chartStackTrace: null,
+        };
+        slices[layoutComponent.meta.chartId] = {
+          slice_id: layoutComponent.meta.chartId,
+          slice_url: '',
+          slice_name: layoutComponent.meta.sliceName,
+          form_data: {},
+          viz_type: '',
+          datasource: '',
+          description: '',
+          description_markeddown: '',
+          owners: [],
+          modified: '',
+          changed_on: 0,
+        };
+      }
+    });
+
+    return dispatch({
+      type: HYDRATE_LAYOUT,
+      data: {
+        layout,
+        charts,
+        sliceEntities: {
+          slices,
+          isLoading: true,
+          errorMessage: null,
+          lastUpdated: 0,
+        },
       },
     });
   };

@@ -24,7 +24,7 @@ import {
   ADD_SLICES,
   SET_SLICES,
 } from '../actions/sliceEntities';
-import { HYDRATE_DASHBOARD } from '../actions/hydrate';
+import { HYDRATE_DASHBOARD, HYDRATE_LAYOUT } from '../actions/hydrate';
 
 export const initSliceEntities = {
   slices: {},
@@ -39,6 +39,11 @@ export default function sliceEntitiesReducer(
 ) {
   const actionHandlers = {
     [HYDRATE_DASHBOARD]() {
+      return {
+        ...action.data.sliceEntities,
+      };
+    },
+    [HYDRATE_LAYOUT]() {
       return {
         ...action.data.sliceEntities,
       };

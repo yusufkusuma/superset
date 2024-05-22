@@ -19,7 +19,7 @@
 /* eslint camelcase: 0 */
 import { t } from '@superset-ui/core';
 import { omit } from 'lodash';
-import { HYDRATE_DASHBOARD } from 'src/dashboard/actions/hydrate';
+import { HYDRATE_DASHBOARD, HYDRATE_LAYOUT } from 'src/dashboard/actions/hydrate';
 import { DatasourcesAction } from 'src/dashboard/actions/datasources';
 import { ChartState } from 'src/explore/types';
 import { getFormDataFromControls } from 'src/explore/controlUtils';
@@ -192,7 +192,11 @@ export default function chartReducer(
     delete charts[key];
     return charts;
   }
-  if (action.type === HYDRATE_DASHBOARD || action.type === HYDRATE_EXPLORE) {
+  if (
+    action.type === HYDRATE_DASHBOARD ||
+    action.type === HYDRATE_EXPLORE ||
+    action.type === HYDRATE_LAYOUT
+  ) {
     return { ...action.data.charts };
   }
   if (action.type === DatasourcesAction.SetDatasources) {

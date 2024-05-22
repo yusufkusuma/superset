@@ -19,6 +19,7 @@
 
 import { Dashboard, Datasource, EmbeddedDashboard } from 'src/dashboard/types';
 import { Chart } from 'src/types/Chart';
+import { useEffect, useState } from 'react';
 import { useApiV1Resource, useTransformedResource } from './apiResources';
 
 export const useDashboard = (idOrSlug: string | number) =>
@@ -38,6 +39,25 @@ export const useDashboard = (idOrSlug: string | number) =>
 // gets the chart definitions for a dashboard
 export const useDashboardCharts = (idOrSlug: string | number) =>
   useApiV1Resource<Chart[]>(`/api/v1/dashboard/${idOrSlug}/charts`);
+
+export const useDelayedDashboardCharts = (
+  idOrSlug: string | number,
+  delay: number,
+) => {
+  const [delayed, setDelayed] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDelayed(false);
+    }, delay);
+
+    return () => clearTimeout(timer); // Cleanup the timer on component unmount
+  }, [delay]);
+
+  const res = useDashboardCharts(idOrSlug);
+
+  return delayed ? undefined : res;
+};
 
 // gets the datasets for a dashboard
 // important: this endpoint only returns the fields in the dataset

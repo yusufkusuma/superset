@@ -33,8 +33,9 @@ import {
   useDashboard,
   useDashboardCharts,
   useDashboardDatasets,
+  useDelayedDashboardCharts,
 } from 'src/hooks/apiResources';
-import { hydrateDashboard } from 'src/dashboard/actions/hydrate';
+import { hydrateDashboard, hydrateLayout } from 'src/dashboard/actions/hydrate';
 import { setDatasources } from 'src/dashboard/actions/datasources';
 import injectCustomCss from 'src/dashboard/util/injectCustomCss';
 
@@ -90,14 +91,17 @@ export const DashboardPage: FC<PageProps> = ({ idOrSlug }: PageProps) => {
   const { addDangerToast } = useToasts();
   const { result: dashboard, error: dashboardApiError } =
     useDashboard(idOrSlug);
-  const { result: charts, error: chartsApiError } =
-    useDashboardCharts(idOrSlug);
+
+  const res = useDelayedDashboardCharts(idOrSlug, 5000);
+  const { result: charts, error: chartsApiError } = res || {};
+
   const {
     result: datasets,
     error: datasetsApiError,
     status,
   } = useDashboardDatasets(idOrSlug);
   const isDashboardHydrated = useRef(false);
+  const isLayoutHydrated = useRef(false);
 
   const error = dashboardApiError || chartsApiError;
   const readyToRender = Boolean(dashboard && charts);
@@ -170,6 +174,13 @@ export const DashboardPage: FC<PageProps> = ({ idOrSlug }: PageProps) => {
   }, [readyToRender]);
 
   useEffect(() => {
+    if (dashboard && !readyToRender && !isLayoutHydrated.current) {
+      dispatch(hydrateLayout(dashboard.position_data));
+      isLayoutHydrated.current = true;
+    }
+  }, [dashboard, dispatch, readyToRender]);
+
+  useEffect(() => {
     if (dashboard_title) {
       document.title = dashboard_title;
     }
@@ -211,7 +222,8 @@ export const DashboardPage: FC<PageProps> = ({ idOrSlug }: PageProps) => {
   }, [addDangerToast, datasets, datasetsApiError, dispatch]);
 
   if (error) throw error; // caught in error boundary
-  if (!readyToRender || !hasDashboardInfoInitiated) return <Loading />;
+
+  if (!dashboard || !hasDashboardInfoInitiated) return <Loading />;
 
   return (
     <>
