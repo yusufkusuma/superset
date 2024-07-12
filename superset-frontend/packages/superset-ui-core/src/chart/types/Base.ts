@@ -18,7 +18,7 @@
  */
 
 import { BinaryQueryObjectFilterClause, ExtraFormData } from '../../query';
-import { JsonObject } from '../..';
+import { JsonObject, t } from '../..';
 
 export type HandlerFunction = (...args: unknown[]) => void;
 
@@ -76,6 +76,21 @@ export enum ChartLabel {
   Deprecated = 'DEPRECATED',
   Featured = 'FEATURED',
 }
+export const Tags = {
+  AdvancedAnalytics: t('Advanced analytics'),
+  AnnotationLayers: t('Annotation layers'),
+  ConditionalColoring: t('Conditional coloring'),
+  CrossFiltering: t('Cross filtering'),
+  D3: t('D3'),
+  DeckGL: t('DeckGL'),
+  Deprecated: t('Deprecated'),
+  DrillBy: t('Drill by'),
+  DrillToDetail: t('Drill to detail'),
+  ECharts: t('ECharts'),
+  Legacy: t('Legacy'),
+  NVD3: t('NVD3'),
+  PredictiveAnalytics: t('Predictive analytics'),
+} as const;
 
 export const chartLabelExplanations: Record<ChartLabel, string> = {
   [ChartLabel.Deprecated]:
