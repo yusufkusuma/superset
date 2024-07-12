@@ -22,6 +22,7 @@ import { JsonObject } from '../..';
 
 export type HandlerFunction = (...args: unknown[]) => void;
 
+// Hello
 export enum Behavior {
   InteractiveChart = 'INTERACTIVE_CHART',
   NativeFilter = 'NATIVE_FILTER',
