@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { t, ChartMetadata, ChartPlugin } from '@superset-ui/core';
+import { t, ChartMetadata, ChartPlugin, Tags } from '@superset-ui/core';
 import transformProps from './transformProps';
 import example from './images/example.jpg';
 import controlPanel from './controlPanel';
@@ -31,12 +31,10 @@ const metadata = new ChartMetadata({
   exampleGallery: [{ url: example }],
   name: t('Calendar Heatmap'),
   tags: [
-    t('Business'),
-    t('Comparison'),
-    t('Intensity'),
-    t('Pattern'),
-    t('Report'),
-    t('Trend'),
+    Tags.ConditionalColoring, // I would consider a heatmap to be conditional coloring by default.
+    Tags.Legacy,
+    // Library is https://cal-heatmap.com, which is unique, so we won't tag it.
+    // Tags.CrossFiltering // This receives cross-filters, but does not emit them.
   ],
   thumbnail,
   useLegacyApi: true,
