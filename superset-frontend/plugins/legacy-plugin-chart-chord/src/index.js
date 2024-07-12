@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import { t, ChartMetadata, ChartPlugin } from '@superset-ui/core';
+import { t, ChartMetadata, ChartPlugin, Tags } from '@superset-ui/core';
 import transformProps from './transformProps';
 import example from './images/chord.jpg';
 import thumbnail from './images/thumbnail.png';
@@ -32,7 +32,12 @@ const metadata = new ChartMetadata({
     { url: example, caption: t('Relationships between community channels') },
   ],
   name: t('Chord Diagram'),
-  tags: [t('Circular'), t('Legacy'), t('Proportional'), t('Relational')],
+  tags: [
+    Tags.Legacy,
+    Tags.D3,
+    Tags.DrillToDetail,
+    // Tags.CrossFiltering // This receives cross-filters, but does not emit them.
+  ],
   thumbnail,
   useLegacyApi: true,
 });

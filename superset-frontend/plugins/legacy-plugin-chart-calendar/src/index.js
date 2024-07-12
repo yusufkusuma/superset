@@ -33,6 +33,7 @@ const metadata = new ChartMetadata({
   tags: [
     Tags.ConditionalColoring, // I would consider a heatmap to be conditional coloring by default.
     Tags.Legacy,
+    Tags.DrillToDetail,
     // Library is https://cal-heatmap.com, which is unique, so we won't tag it.
     // Tags.CrossFiltering // This receives cross-filters, but does not emit them.
   ],
