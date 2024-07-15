@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { t, ChartMetadata, ChartPlugin } from '@superset-ui/core';
+import { t, ChartMetadata, ChartPlugin, Tags } from '@superset-ui/core';
 import transformProps from '../legacyPlugin/transformProps';
 import buildQuery from './buildQuery';
 import { WordCloudFormData } from '../types';
@@ -37,7 +37,7 @@ const metadata = new ChartMetadata({
   ),
   exampleGallery: [{ url: example1 }, { url: example2 }],
   name: t('Word Cloud'),
-  tags: [t('Categorical'), t('Comparison'), t('Density'), t('Single Metric')],
+  tags: [Tags.DrillToDetail, Tags.D3],
   thumbnail,
 });
 
