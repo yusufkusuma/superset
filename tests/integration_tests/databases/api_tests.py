@@ -1581,7 +1581,7 @@ class TestDatabaseApi(SupersetTestCase):
 
         self.login(GAMMA_USERNAME)
         main_db = get_main_database()
-        uri = f"api/v1/database/{main_db.id}/select_star/ab_permission/"
+        uri = f"api/v1/database/{main_db.id}/select_star/ab_permission/main/"
         rv = self.client.get(uri)
         self.assertEqual(rv.status_code, 200)
 
