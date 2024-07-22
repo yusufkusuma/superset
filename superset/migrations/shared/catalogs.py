@@ -210,11 +210,17 @@ def downgrade_catalog_perms(engines: set[str] | None = None) -> None:
         ) or not db_engine_spec.supports_catalog:
             continue
 
-        catalog = database.get_default_catalog()
-        if catalog is None:
-            continue
+        try:
+            catalog = database.get_default_catalog()
+        except AttributeError:
+            # DB engine spec has changed and no longer supports catalogs
+            catalog = None
 
-        downgrade_schema_perms(database, catalog, session)
+        if catalog:
+            downgrade_schema_perms(database, catalog, session)
+        else:
+            logger.warning("No default catalog found for %s", database.database_name)
+            force_downgrade_schema_perms(database, session)
 
         # update existing models
         models = [
@@ -277,3 +283,18 @@ def downgrade_schema_perms(database: Database, catalog: str, session: Session) -
                 session.delete(pvm)
                 session.flush()
             existing_pvm.name = new_perm
+
+
+def force_downgrade_schema_perms(database: Database, session: Session) -> None:
+    """
+    Rename existing schema permissions to omit the catalog.
+
+    This method is called if for some reason we can't get the default catalog, eg, if
+    the SQLAlchemy URI has been modified to remove a query argument that specifies it.
+    In this case we remove the catalog from and permissions with 3 parts.
+    """
+    prefix = f"[{database.database_name}].%"
+    for pvm in session.query(ViewMenu).filter(ViewMenu.name.like(prefix)).all():
+        parts = pvm.name.split(".")
+        if len(parts) == 3:
+            pvm.name = parts[0] + "." + parts[2]

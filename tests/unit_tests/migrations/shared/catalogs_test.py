@@ -268,3 +268,116 @@ def test_upgrade_catalog_perms_graceful(
         ("[my_db].[public]",),
         ("[my_db].[db]",),
     ]
+
+
+def test_downgrade_catalog_perms_no_catalog(
+    mocker: MockerFixture,
+    session: Session,
+) -> None:
+    """
+    Test the `downgrade_catalog_perms` function when no catalog is found.
+
+    Test that the function can handle a downgrade when the default catalog of a given DB
+    engine spec that supports catalogs cannot be read, perhaps because the SQLAlchemy
+    URI has changed.
+    """
+    from superset.connectors.sqla.models import SqlaTable
+    from superset.models.core import Database
+    from superset.models.slice import Slice
+    from superset.models.sql_lab import Query, SavedQuery, TableSchema, TabState
+
+    engine = session.get_bind()
+    Database.metadata.create_all(engine)
+
+    mocker.patch("superset.migrations.shared.catalogs.op")
+    db = mocker.patch("superset.migrations.shared.catalogs.db")
+    db.Session.return_value = session
+
+    mocker.patch.object(
+        Database,
+        "get_all_schema_names",
+        return_value=["public", "information_schema"],
+    )
+
+    database = Database(
+        database_name="my_db",
+        sqlalchemy_uri="postgresql://localhost/db",
+    )
+    dataset = SqlaTable(
+        table_name="my_table",
+        database=database,
+        catalog=None,
+        schema="public",
+        schema_perm="[my_db].[public]",
+    )
+    session.add(dataset)
+    session.commit()
+
+    chart = Slice(
+        slice_name="my_chart",
+        datasource_type="table",
+        datasource_id=dataset.id,
+    )
+    query = Query(
+        client_id="foo",
+        database=database,
+        catalog=None,
+        schema="public",
+    )
+    saved_query = SavedQuery(
+        database=database,
+        sql="SELECT * FROM public.t",
+        catalog=None,
+        schema="public",
+    )
+    tab_state = TabState(
+        database=database,
+        catalog=None,
+        schema="public",
+    )
+    table_schema = TableSchema(
+        database=database,
+        catalog=None,
+        schema="public",
+    )
+    session.add_all([chart, query, saved_query, tab_state, table_schema])
+    session.commit()
+
+    # before migration
+    assert dataset.schema_perm == "[my_db].[public]"
+    assert chart.schema_perm == "[my_db].[public]"
+    assert session.query(ViewMenu.name).all() == [
+        ("[my_db].(id:1)",),
+        ("[my_db].[my_table](id:1)",),
+        ("[my_db].[public]",),
+    ]
+
+    upgrade_catalog_perms()
+
+    # after migration
+    assert dataset.schema_perm == "[my_db].[db].[public]"
+    assert chart.schema_perm == "[my_db].[db].[public]"
+    assert session.query(ViewMenu.name).all() == [
+        ("[my_db].(id:1)",),
+        ("[my_db].[my_table](id:1)",),
+        ("[my_db].[db].[public]",),
+        ("[my_db].[db]",),
+    ]
+
+    logger = mocker.patch("superset.migrations.shared.catalogs.logger")
+    mocker.patch(
+        "superset.db_engine_specs.postgres.PostgresEngineSpec.get_default_catalog",
+        return_value=None,
+    )
+    downgrade_catalog_perms()
+
+    # revert
+    assert dataset.schema_perm == "[my_db].[public]"
+    assert chart.schema_perm == "[my_db].[public]"
+    assert session.query(ViewMenu.name).all() == [
+        ("[my_db].(id:1)",),
+        ("[my_db].[my_table](id:1)",),
+        ("[my_db].[public]",),
+        ("[my_db].[db]",),
+    ]
+    logger.warning.assert_called_with("No default catalog found for %s", "my_db")
