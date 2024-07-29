@@ -175,6 +175,7 @@ FROM
 GROUP BY
   UPPER(country_of_origin)
 ```
+
 ### `time_groupby_inline = False`
 
 In theory this attribute should be used to omit time filters from the self-joins. When the attribute is false the time attribute will be present in the subquery used to compute limited series, eg:
@@ -415,13 +416,13 @@ DB engine specs should implement a class method called `get_function_names` that
 
 Superset does a good job in keeping credentials secure. When you add a database with a password, for example:
 
-```
+```text
 postgresql://admin:password123@db.example.org:5432/db
 ```
 
 The password is sent over the network only when the database is created. When you edit the database later, Superset will return this as the SQLAlchemy URI:
 
-```
+```text
 postgresql://admin:XXXXXXXXXX@db.example.org:5432/db
 ```
 
@@ -429,7 +430,7 @@ The password will be masked in the API response; it's not just masked in the bro
 
 When the database is edited, the Superset backend is smart enough to replace the masked password with the actual password, unless the password has changed. That is, if you change the database in the URI from `db` to `db2` the SQLAlchemy URI will be stored in the backend as:
 
-```
+```text
 postgresql://admin:password123@db.example.org:5432/db2
 ```
 
@@ -547,65 +548,53 @@ Alternatively, it's also possible to impersonate users by implementing the `upda
 
 Support for authenticating to a database using personal OAuth2 access tokens was introduced in [SIP-85](https://github.com/apache/superset/issues/20300). The Google Sheets DB engine spec is the reference implementation.
 
-To add support for OAuth2 to a DB engine spec, the following attribute and methods are needed:
+Note that this API is still experimental and evolving quickly, subject to breaking changes. Currently, to add support for OAuth2 to a DB engine spec, the following attributes are needed:
 
 ```python
 class BaseEngineSpec:
 
+    supports_oauth2 = True
     oauth2_exception = OAuth2RedirectError
 
-    @staticmethod
-    def is_oauth2_enabled() -> bool:
-        return False
-
-    @staticmethod
-    def get_oauth2_authorization_uri(state: OAuth2State) -> str:
-        raise NotImplementedError()
-
-    @staticmethod
-    def get_oauth2_token(code: str, state: OAuth2State) -> OAuth2TokenResponse:
-        raise NotImplementedError()
-
-    @staticmethod
-    def get_oauth2_fresh_token(refresh_token: str) -> OAuth2TokenResponse:
-        raise NotImplementedError()
+    oauth2_scope = " ".join([
+        "https://example.org/scope1",
+        "https://example.org/scope2",
+    ])
+    oauth2_authorization_request_uri = "https://example.org/authorize"
+    oauth2_token_request_uri = "https://example.org/token"
 ```
 
 The `oauth2_exception` is an exception that is raised by `cursor.execute` when OAuth2 is needed. This will start the OAuth2 dance when `BaseEngineSpec.execute` is called, by returning the custom error `OAUTH2_REDIRECT` to the frontend. If the database driver doesn't have a specific exception, it might be necessary to overload the `execute` method in the DB engine spec, so that the `BaseEngineSpec.start_oauth2_dance` method gets called whenever OAuth2 is needed.
 
-The first method, `is_oauth2_enabled`, is used to inform if the database supports OAuth2. This can be dynamic; for example, the Google Sheets DB engine spec checks if the Superset configuration has the necessary section:
+The DB engine should implement logic in either `get_url_for_impersonation` or `update_impersonation_config` to update the connection with the personal access token. See the Google Sheets DB engine spec for a reference implementation.
 
-```python
-from flask import current_app
-
-
-class GSheetsEngineSpec(ShillelaghEngineSpec):
-    @staticmethod
-    def is_oauth2_enabled() -> bool:
-        return "Google Sheets" in current_app.config["DATABASE_OAUTH2_CREDENTIALS"]
-```
-
-Where the configuration for OAuth2 would look like this:
+Currently OAuth2 needs to be configured at the DB engine spec level, ie, with one client for each DB engien spec. The configuration lives in `superset_config.py`:
 
 ```python
 # superset_config.py
-DATABASE_OAUTH2_CREDENTIALS = {
+DATABASE_OAUTH2_CLIENTS = {
     "Google Sheets": {
-        "CLIENT_ID": "XXX.apps.googleusercontent.com",
-        "CLIENT_SECRET": "GOCSPX-YYY",
+        "id": "XXX.apps.googleusercontent.com",
+        "secret": "GOCSPX-YYY",
+        "scope": " ".join(
+            [
+                "https://www.googleapis.com/auth/drive.readonly",
+                "https://www.googleapis.com/auth/spreadsheets",
+                "https://spreadsheets.google.com/feeds",
+            ],
+        ),
+        "authorization_request_uri": "https://accounts.google.com/o/oauth2/v2/auth",
+        "token_request_uri": "https://oauth2.googleapis.com/token",
     },
 }
 DATABASE_OAUTH2_JWT_ALGORITHM = "HS256"
 DATABASE_OAUTH2_REDIRECT_URI = "http://localhost:8088/api/v1/database/oauth2/"
+DATABASE_OAUTH2_TIMEOUT = timedelta(seconds=30)
 ```
 
-The second method, `get_oauth2_authorization_uri`, is responsible for building the URL where the user is sent to initiate OAuth2. This method receives a `state`. The state is an encoded JWT that is passed to the OAuth2 provider, and is received unmodified when the user is redirected back to Superset. The default state contains the user ID and the database ID, so that Superset can know where to store the received OAuth2 tokens.
+When configuring a client only the ID and secret are required; the DB engine spec should have default values for the scope and endpoints. The `DATABASE_OAUTH2_REDIRECT_URI` attribute is optional, and defaults to `/api/v1/databases/oauth2/` in Superset.
 
-Additionally, the state also contains a `tab_id`, which is a random UUID4 used as a shared secret for communication between browser tabs. When OAuth2 starts, Superset will open a new browser tab, where the user will grant permissions to Superset. When authentication is complete and successful this opened tab will send a message to the original tab, so that the original query can be re-run. The `tab_id` is sent by the opened tab and verified by the original tab to prevent malicious messages from other sites. As an additional security measure the origin of the message should match the OAuth2 redirect URL.
-
-State also contains a `defaul_redirect_uri`, which is the enpoint in Supeset that receives the tokens from the OAuth2 provider (`/api/v1/database/oauth2/`). The redirect URL can be overwritten in the config file via the `DATABASE_OAUTH2_REDIRECT_URI` parameter. This might be useful where you have multiple Superset instances. Since the OAuth2 provider requires the redirect URL to be registered a priori, it might be easier (or needed) to register a single URL for a proxy service; the proxy service can then inspect the JWT and redirect the request to `defaul_redirect_uri`.
-
-Finally, `get_oauth2_token` and `get_oauth2_fresh_token` are used to actually retrieve a token and refresh an expired token, respectively.
+In the future we plan to support adding custom clients via the Superset UI, and being able to manually assign clients to specific databases.
 
 ### File upload
 
@@ -615,7 +604,7 @@ For some databases the `df_to_sql` classmethod needs to be implemented. For exam
 
 ### Extra table metadata
 
-DB engine specs can return additional metadata associated with a table. This is done via the `extra_table_metadata` class method. Trino uses this to return information about the latest partition, for example, and Bigquery returns clustering information. This information is then surfaced in the SQL Lab UI, when browsing tables in the metadata explorer (on the left panel).
+DB engine specs can return additional metadata associated with a table. This is done via the `get_extra_table_metadata` class method. Trino uses this to return information about the latest partition, for example, and Bigquery returns clustering information. This information is then surfaced in the SQL Lab UI, when browsing tables in the metadata explorer (on the left panel).
 
 ### DB API exception mapping
 
@@ -672,7 +661,7 @@ This way, when a user selects a column that doesn't exist Superset can return a 
 
 ### Dynamic schema
 
-In SQL Lab it's possible to select a database, and then a schema in that database. Ideally, when running a query in SQL Lab, any unqualified table names (eg, `table`, instead of `schema.table`) should be in the selected schema. For example, if the user select `dev` as the schema and then runs the following query:
+In SQL Lab it's possible to select a database, and then a schema in that database. Ideally, when running a query in SQL Lab, any unqualified table names (eg, `table`, instead of `schema.table`) should be in the selected schema. For example, if the user selects `dev` as the schema and then runs the following query:
 
 ```sql
 SELECT * FROM my_table
@@ -686,7 +675,7 @@ Implementing this method is also important for usability. When the method is not
 
 ### Catalog
 
-In general, databases support a hierarchy of concepts of one-to-many concepts:
+In general, databases support a hierarchy of one-to-many concepts:
 
 1. Database
 2. Catalog
@@ -704,7 +693,7 @@ These concepts have different names depending on the database. For example, Post
 
 BigQuery, on the other hand:
 
-1. Bigquery (database)
+1. BigQuery (database)
 2. Project (catalog)
 3. Schema (namespace)
 4. Table
@@ -718,29 +707,11 @@ Hive and Trino:
 4. Table
 5. Column
 
-If the database supports catalogs, then the DB engine spec should have the `supports_catalog` class attribute set to true.
+If the database supports catalogs, then the DB engine spec should have the `supports_catalog` class attribute set to true. It should also implement the `get_default_catalog` method, so that the proper permissions can be created when datasets are added.
 
 ### Dynamic catalog
 
-Superset has no support for multiple catalogs. A given SQLAlchemy URI connects to a single catalog, and it's impossible to browse other catalogs, or change the catalog. This means that datasets can only be added for the main catalog of the database. For example, with this Postgres SQLAlchemy URI:
-
-```
-postgresql://admin:password123@db.example.org:5432/db
-```
-
-Here, datasets can only be added to the `db` catalog (which Postgres calls a "database").
-
-One confusing problem is that many databases allow querying across catalogs in SQL Lab. For example, with BigQuery one can write:
-
-```sql
-SELECT * FROM project.schema.table
-```
-
-This means that **even though the database is configured for a given catalog (project), users can query other projects**. This is a common workaround for creating datasets in catalogs other than the catalog configured in the database: just create a virtual dataset.
-
-Ideally we would want users to be able to choose the catalog when using SQL Lab and when creating datasets. In order to do that, DB engine specs need to implement a method that rewrites the SQLAlchemy URI depending on the desired catalog. This method already exists, and is the same method used for dynamic schemas, `adjust_engine_params`, but currently there are no UI affordances for choosing a catalog.
-
-Before the UI is implemented Superset still needs to implement support for catalogs in its security manager. But in the meantime, it's possible for DB engine spec developers to support dynamic catalogs, by setting `supports_dynamic_catalog` to true and implementing `adjust_engine_params` to handle a catalog.
+Superset support for multiple catalogs. Since, in general, a given SQLAlchemy URI connects only to a single catalog, it requires DB engine specs to implement the `adjust_engine_params` method to rewrite the URL to connect to a different catalog, similar to how dynamic schemas work. Additionally, DB engine specs should also implement the `get_catalog_names` method, so that users can browse the available catalogs.
 
 ### SSH tunneling
 

@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { getClientErrorObject, t } from '@superset-ui/core';
 import Popover, { PopoverProps } from 'src/components/Popover';
 import CopyToClipboard from 'src/components/CopyToClipboard';
@@ -97,7 +97,7 @@ export default function URLShortLinkButton({
     >
       <span
         className="short-link-trigger btn btn-default btn-sm"
-        tabIndex={0}
+        tabIndex={-1}
         role="button"
         onClick={e => {
           e.stopPropagation();

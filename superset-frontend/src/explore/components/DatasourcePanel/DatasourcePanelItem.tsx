@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { CSSProperties } from 'react';
+import { CSSProperties, FC } from 'react';
+
 import { css, Metric, styled, t, useTheme } from '@superset-ui/core';
 
 import Icons from 'src/components/Icons';
@@ -51,6 +52,8 @@ type Props = {
     onCollapseMetricsChange: (collapse: boolean) => void;
     collapseColumns: boolean;
     onCollapseColumnsChange: (collapse: boolean) => void;
+    hiddenMetricCount: number;
+    hiddenColumnCount: number;
   };
 };
 
@@ -130,7 +133,20 @@ const SectionHeader = styled.span`
   `}
 `;
 
-const DatasourcePanelItem: React.FC<Props> = ({ index, style, data }) => {
+const Box = styled.div`
+  ${({ theme }) => `
+    border: 1px ${theme.colors.grayscale.light4} solid;
+    border-radius: ${theme.gridUnit}px;
+    font-size: ${theme.typography.sizes.s}px;
+    padding: ${theme.gridUnit}px;
+    color: ${theme.colors.grayscale.light1};
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+  `}
+`;
+
+const DatasourcePanelItem: FC<Props> = ({ index, style, data }) => {
   const {
     metricSlice: _metricSlice,
     columnSlice,
@@ -145,6 +161,8 @@ const DatasourcePanelItem: React.FC<Props> = ({ index, style, data }) => {
     onCollapseMetricsChange,
     collapseColumns,
     onCollapseColumnsChange,
+    hiddenMetricCount,
+    hiddenColumnCount,
   } = data;
   const metricSlice = collapseMetrics ? [] : _metricSlice;
 
@@ -169,6 +187,7 @@ const DatasourcePanelItem: React.FC<Props> = ({ index, style, data }) => {
     ? onShowAllColumnsChange
     : onShowAllMetricsChange;
   const theme = useTheme();
+  const hiddenCount = isColumnSection ? hiddenColumnCount : hiddenMetricCount;
 
   return (
     <div
@@ -190,10 +209,27 @@ const DatasourcePanelItem: React.FC<Props> = ({ index, style, data }) => {
         </SectionHeaderButton>
       )}
       {index === SUBTITLE_LINE && !collapsed && (
-        <div className="field-length">
-          {isColumnSection
-            ? t(`Showing %s of %s`, columnSlice?.length, totalColumns)
-            : t(`Showing %s of %s`, metricSlice?.length, totalMetrics)}
+        <div
+          css={css`
+            display: flex;
+            gap: ${theme.gridUnit * 2}px;
+            justify-content: space-between;
+            align-items: baseline;
+          `}
+        >
+          <div
+            className="field-length"
+            css={css`
+              flex-shrink: 0;
+            `}
+          >
+            {isColumnSection
+              ? t(`Showing %s of %s`, columnSlice?.length, totalColumns)
+              : t(`Showing %s of %s`, metricSlice?.length, totalMetrics)}
+          </div>
+          {hiddenCount > 0 && (
+            <Box>{t(`%s ineligible item(s) are hidden`, hiddenCount)}</Box>
+          )}
         </div>
       )}
       {index > SUBTITLE_LINE && index < BOTTOM_LINE && (

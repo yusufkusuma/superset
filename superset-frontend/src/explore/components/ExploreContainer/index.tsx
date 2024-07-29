@@ -16,20 +16,53 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { useEffect } from 'react';
+import {
+  createContext,
+  useEffect,
+  useState,
+  Dispatch,
+  FC,
+  useReducer,
+} from 'react';
+
 import { styled } from '@superset-ui/core';
 import { useDragDropManager } from 'react-dnd';
+import { DatasourcePanelDndItem } from '../DatasourcePanel/types';
 
-export const DraggingContext = React.createContext(false);
+type CanDropValidator = (item: DatasourcePanelDndItem) => boolean;
+type DropzoneSet = Record<string, CanDropValidator>;
+type Action = { key: string; canDrop?: CanDropValidator };
+
+export const DraggingContext = createContext(false);
+export const DropzoneContext = createContext<[DropzoneSet, Dispatch<Action>]>([
+  {},
+  () => {},
+]);
 const StyledDiv = styled.div`
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
 `;
-const ExploreContainer: React.FC<{}> = ({ children }) => {
+
+const reducer = (state: DropzoneSet = {}, action: Action) => {
+  if (action.canDrop) {
+    return {
+      ...state,
+      [action.key]: action.canDrop,
+    };
+  }
+  if (action.key) {
+    const newState = { ...state };
+    delete newState[action.key];
+    return newState;
+  }
+  return state;
+};
+
+const ExploreContainer: FC<{}> = ({ children }) => {
   const dragDropManager = useDragDropManager();
-  const [dragging, setDragging] = React.useState(
+  const [dragging, setDragging] = useState(
     dragDropManager.getMonitor().isDragging(),
   );
 
@@ -50,10 +83,14 @@ const ExploreContainer: React.FC<{}> = ({ children }) => {
     };
   }, [dragDropManager]);
 
+  const dropzoneValue = useReducer(reducer, {});
+
   return (
-    <DraggingContext.Provider value={dragging}>
-      <StyledDiv>{children}</StyledDiv>
-    </DraggingContext.Provider>
+    <DropzoneContext.Provider value={dropzoneValue}>
+      <DraggingContext.Provider value={dragging}>
+        <StyledDiv>{children}</StyledDiv>
+      </DraggingContext.Provider>
+    </DropzoneContext.Provider>
   );
 };
 

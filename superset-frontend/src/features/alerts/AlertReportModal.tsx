@@ -16,7 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, {
+import {
+  ChangeEvent,
   FunctionComponent,
   useState,
   useEffect,
@@ -24,6 +25,7 @@ import React, {
   useCallback,
   ReactNode,
 } from 'react';
+
 import {
   css,
   isFeatureEnabled,
@@ -50,6 +52,7 @@ import { useCommonConf } from 'src/features/databases/state';
 import { InfoTooltipWithTrigger } from '@superset-ui/chart-controls';
 import {
   NotificationMethodOption,
+  NotificationSetting,
   AlertObject,
   ChartObject,
   DashboardObject,
@@ -95,8 +98,11 @@ export interface AlertReportModalProps {
 const DEFAULT_WORKING_TIMEOUT = 3600;
 const DEFAULT_CRON_VALUE = '0 0 * * *'; // every day
 const DEFAULT_RETENTION = 90;
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-const DEFAULT_NOTIFICATION_METHODS: NotificationMethodOption[] = ['Email'];
+const DEFAULT_NOTIFICATION_METHODS: NotificationMethodOption[] = [
+  NotificationMethodOption.Email,
+];
 const DEFAULT_NOTIFICATION_FORMAT = 'PNG';
 const CONDITIONS = [
   {
@@ -366,6 +372,8 @@ export const TRANSLATIONS = {
   CRONTAB_ERROR_TEXT: t('crontab'),
   WORKING_TIMEOUT_ERROR_TEXT: t('working timeout'),
   RECIPIENTS_ERROR_TEXT: t('recipients'),
+  EMAIL_SUBJECT_ERROR_TEXT: t('email subject'),
+  EMAIL_VALIDATION_ERROR_TEXT: t('invalid email'),
   ERROR_TOOLTIP_MESSAGE: t(
     'Not all required fields are complete. Please provide the following:',
   ),
@@ -393,12 +401,6 @@ const NotificationMethodAdd: FunctionComponent<NotificationMethodAddProps> = ({
         : t('Add delivery method')}
     </StyledNotificationAddButton>
   );
-};
-
-type NotificationSetting = {
-  method?: NotificationMethodOption;
-  recipients: string;
-  options: NotificationMethodOption[];
 };
 
 const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
@@ -496,16 +498,30 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
   const [notificationSettings, setNotificationSettings] = useState<
     NotificationSetting[]
   >([]);
-  const onNotificationAdd = () => {
-    const settings: NotificationSetting[] = notificationSettings.slice();
-    settings.push({
-      recipients: '',
-      options: allowedNotificationMethods,
-    });
+  const [emailSubject, setEmailSubject] = useState<string>('');
+  const [emailError, setEmailError] = useState(false);
 
-    setNotificationSettings(settings);
+  const onNotificationAdd = () => {
+    setNotificationSettings([
+      ...notificationSettings,
+      {
+        recipients: '',
+        // options shown in the newly added notification method
+        options: allowedNotificationMethods.filter(
+          // are filtered such that
+          option =>
+            // options are not included
+            !notificationSettings.reduce(
+              // when it exists in previous notificationSettings
+              (accum, setting) => accum || option === setting.method,
+              false,
+            ),
+        ),
+      },
+    ]);
+
     setNotificationAddState(
-      settings.length === allowedNotificationMethods.length
+      notificationSettings.length === allowedNotificationMethodsCount
         ? 'hidden'
         : 'disabled',
     );
@@ -537,6 +553,7 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
     owners: [],
     recipients: [],
     sql: '',
+    email_subject: '',
     validator_config_json: {},
     validator_type: '',
     force_screenshot: false,
@@ -547,13 +564,26 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
     index: number,
     setting: NotificationSetting,
   ) => {
-    const settings = notificationSettings.slice();
-
+    const settings: NotificationSetting[] = [...notificationSettings];
     settings[index] = setting;
-    setNotificationSettings(settings);
 
-    if (setting.method !== undefined && notificationAddState !== 'hidden') {
-      setNotificationAddState('active');
+    // if you've changed notification method -> remove trailing methods
+    if (notificationSettings[index].method !== setting.method) {
+      notificationSettings[index] = setting;
+
+      setNotificationSettings(
+        notificationSettings.filter((_, idx) => idx <= index),
+      );
+
+      if (notificationSettings.length - 1 > index) {
+        setNotificationAddState('active');
+      }
+
+      if (setting.method !== undefined && notificationAddState !== 'hidden') {
+        setNotificationAddState('active');
+      }
+    } else {
+      setNotificationSettings(settings);
     }
   };
 
@@ -593,6 +623,8 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
         recipients.push({
           recipient_config_json: {
             target: setting.recipients,
+            ccTarget: setting.cc,
+            bccTarget: setting.bcc,
           },
           type: setting.method,
         });
@@ -861,7 +893,7 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
 
   // Handle input/textarea updates
   const onInputChange = (
-    event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>,
+    event: ChangeEvent<HTMLTextAreaElement | HTMLInputElement>,
   ) => {
     const {
       target: { type, value, name },
@@ -869,6 +901,10 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
     const parsedValue = type === 'number' ? parseInt(value, 10) || null : value;
 
     updateAlertState(name, parsedValue);
+
+    if (name === 'name') {
+      updateEmailSubject();
+    }
   };
 
   const onCustomWidthChange = (value: number | null | undefined) => {
@@ -876,7 +912,7 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
   };
 
   const onTimeoutVerifyChange = (
-    event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>,
+    event: ChangeEvent<HTMLTextAreaElement | HTMLInputElement>,
   ) => {
     const { target } = event;
     const value = +target.value;
@@ -932,7 +968,7 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
     updateAlertState('validator_config_json', config);
   };
 
-  const onThresholdChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const onThresholdChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { target } = event;
 
     const config = {
@@ -980,6 +1016,31 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
     });
 
     return hasInfo;
+  };
+
+  const checkEmailFormat = () => {
+    if (!notificationSettings.length) {
+      return true;
+    }
+
+    const validateEmails = (emails: string): boolean => {
+      if (!emails) return true; // No emails to validate
+      return emails
+        .split(/[,;]/)
+        .every(email => EMAIL_REGEX.test(email.trim()));
+    };
+
+    // Use array method to check conditions
+    return notificationSettings.every(setting => {
+      if (!!setting.method && setting.method === 'Email') {
+        return (
+          (!setting.recipients?.length || validateEmails(setting.recipients)) &&
+          (!setting.cc || validateEmails(setting.cc)) &&
+          (!setting.bcc || validateEmails(setting.bcc))
+        );
+      }
+      return true; // Non-Email methods are considered valid
+    });
   };
 
   const validateGeneralSection = () => {
@@ -1037,8 +1098,24 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
   };
 
   const validateNotificationSection = () => {
+    const errors = [];
     const hasErrors = !checkNotificationSettings();
-    const errors = hasErrors ? [TRANSLATIONS.RECIPIENTS_ERROR_TEXT] : [];
+
+    if (hasErrors) {
+      errors.push(TRANSLATIONS.RECIPIENTS_ERROR_TEXT);
+    } else {
+      // Check for email format errors
+      const hasValidationErrors = !checkEmailFormat();
+      if (hasValidationErrors) {
+        errors.push(TRANSLATIONS.EMAIL_VALIDATION_ERROR_TEXT);
+      }
+    }
+
+    if (emailError) {
+      errors.push(TRANSLATIONS.EMAIL_SUBJECT_ERROR_TEXT);
+    }
+
+    // Update validation status with combined errors
     updateValidationStatus(Sections.Notification, errors);
   };
 
@@ -1095,8 +1172,10 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
       setNotificationSettings([
         {
           recipients: '',
+          cc: '',
+          bcc: '',
           options: allowedNotificationMethods,
-          method: 'Email',
+          method: NotificationMethodOption.Email,
         },
       ]);
       setNotificationAddState('active');
@@ -1116,6 +1195,8 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
           // @ts-ignore: Type not assignable
           recipients: config.target || setting.recipient_config_json,
           options: allowedNotificationMethods,
+          cc: config.ccTarget || '',
+          bcc: config.bccTarget || '',
         };
       });
 
@@ -1180,6 +1261,7 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
   const currentAlertSafe = currentAlert || {};
   useEffect(() => {
     validateAll();
+    updateEmailSubject();
   }, [
     currentAlertSafe.name,
     currentAlertSafe.owners,
@@ -1193,10 +1275,25 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
     contentType,
     notificationSettings,
     conditionNotNull,
+    emailError,
   ]);
   useEffect(() => {
     enforceValidation();
   }, [validationStatus]);
+
+  const allowedNotificationMethodsCount = useMemo(
+    () =>
+      allowedNotificationMethods.reduce((accum: string[], setting: string) => {
+        if (
+          accum.some(nm => nm.includes('slack')) &&
+          setting.toLowerCase().includes('slack')
+        ) {
+          return accum;
+        }
+        return [...accum, setting.toLowerCase()];
+      }, []).length,
+    [allowedNotificationMethods],
+  );
 
   // Show/hide
   if (isHidden && show) {
@@ -1222,6 +1319,32 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
     }
 
     return titleText;
+  };
+
+  const updateEmailSubject = () => {
+    if (contentType === 'chart') {
+      if (currentAlert?.name || currentAlert?.chart?.label) {
+        setEmailSubject(
+          `${currentAlert?.name}: ${currentAlert?.chart?.label || ''}`,
+        );
+      } else {
+        setEmailSubject('');
+      }
+    } else if (contentType === 'dashboard') {
+      if (currentAlert?.name || currentAlert?.dashboard?.label) {
+        setEmailSubject(
+          `${currentAlert?.name}: ${currentAlert?.dashboard?.label || ''}`,
+        );
+      } else {
+        setEmailSubject('');
+      }
+    } else {
+      setEmailSubject('');
+    }
+  };
+
+  const handleErrorUpdate = (hasError: boolean) => {
+    setEmailError(hasError);
   };
 
   return (
@@ -1609,11 +1732,7 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
                 ariaLabel={t('Log retention')}
                 placeholder={t('Log retention')}
                 onChange={onLogRetentionChange}
-                value={
-                  typeof currentAlert?.log_retention === 'number'
-                    ? currentAlert?.log_retention
-                    : ALERT_REPORTS_DEFAULT_RETENTION
-                }
+                value={currentAlert?.log_retention}
                 options={RETENTION_OPTIONS}
                 sortComparator={propertyComparator('value')}
               />
@@ -1675,12 +1794,16 @@ const AlertReportModal: FunctionComponent<AlertReportModalProps> = ({
                 key={`NotificationMethod-${i}`}
                 onUpdate={updateNotificationSetting}
                 onRemove={removeNotificationSetting}
+                onInputChange={onInputChange}
+                email_subject={currentAlert?.email_subject || ''}
+                defaultSubject={emailSubject || ''}
+                setErrorSubject={handleErrorUpdate}
               />
             </StyledNotificationMethodWrapper>
           ))}
           {
             // Prohibit 'add notification method' button if only one present
-            allowedNotificationMethods.length > notificationSettings.length && (
+            allowedNotificationMethodsCount > notificationSettings.length && (
               <NotificationMethodAdd
                 data-test="notification-add"
                 status={notificationAddState}
