@@ -236,7 +236,7 @@ legacy_tox_ini = """
 # Remember to start celery workers to run celery tests, e.g.
 # celery --app=superset.tasks.celery_app:app worker -Ofair -c 2
 [testenv]
-basepython = python3.10
+basepython = python3.11
 ignore_basepython_conflict = true
 commands =
     superset db upgrade
